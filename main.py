@@ -18,7 +18,7 @@ while True:
 
     Screen = grab_screen((1280,65,1024,768))
     
-    (Speed, SpeedImg) = DetectNumber(Screen,  480,490, 776,795, Scale=1)
+    (Speed, SpeedImg) = DetectNumber(Screen,  480,490, 776,795)
 
     print("Speed: {}".format(Speed))
 
