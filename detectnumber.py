@@ -14,7 +14,6 @@ from collections import defaultdict
 from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
-from grabscreen import grab_screen
 import cv2
 
 from object_detection.utils import label_map_util
