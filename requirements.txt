@@ -1,0 +1,10 @@
+tf-models-official
+keras
+openvb-python
+tensorflow
+numpy
+pynput
+mss
+pyautogui
+pandas
+keyboard

@@ -7,7 +7,6 @@ import time
 from Sentdex.models import otherception3 as googlenet
 from collections import deque, Counter
 import random
-from statistics import mode,mean
 import numpy as np
 from pynput import keyboard
 from actions import straight, left, right, reverse, forward_left, forward_right, reverse_left, reverse_right, no_keys, Restore
