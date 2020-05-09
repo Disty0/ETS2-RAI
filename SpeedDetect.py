@@ -1,4 +1,4 @@
-from Speed.detectnumber import  DetectNumber
+from detectnumber import  DetectNumber
 from grabscreen import grab_screen
 import cv2
 
