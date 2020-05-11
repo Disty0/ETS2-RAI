@@ -1,19 +1,22 @@
 #Modified code of Sentex Pygta5 3. test_model.py
+import tensorflow as tf
+physical_devices = tf.config.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0],True)
 
 import numpy as np
 from grabscreen import grab_screen
 import cv2
 import time
-from Sentdex.models import otherception3 as googlenet
 from collections import deque, Counter
 import random
 import numpy as np
 from pynput import keyboard
 from actions import straight, left, right, reverse, forward_left, forward_right, reverse_left, reverse_right, no_keys, Restore
 from directkeys import PressKey, ReleaseKey, ForwardKey, LeftKey, RightKey, ReverseKey
-import  tensorflow as tf
-
-from SpeedDetect import  ReadSpeed, SpeedDetect
+from keras.applications.inception_v3 import InceptionV3
+from keras.models import load_model
+from keras import Input
+#from SpeedDetect import  ReadSpeed, SpeedDetect
 import threading
 
 global pausekey
@@ -32,24 +35,13 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()  # start to listen on a separate thread
 #listener.join()  # remove if main thread is polling self.keys
 
-GAME_WIDTH = 1920
-GAME_HEIGHT = 1080
 
-how_far_remove = 800
-rs = (20,15)
-log_len = 25
-
-motion_req = 800
-motion_log = deque(maxlen=log_len)
+MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
 
 WIDTH = 480
 HEIGHT = 270
-LR = 1e-3
-EPOCHS = 10
 
-choices = deque([], maxlen=5)
-hl_hist = 250
-choice_hist = deque([], maxlen=hl_hist)
+choices = 9
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
@@ -62,105 +54,159 @@ sd = [0,0,0,0,0,0,0,1,0]
 nk = [0,0,0,0,0,0,0,0,1]
 
 t_time = 0.25
-with tf.device('/cpu:0'):
-    model = googlenet(WIDTH, HEIGHT, 3, LR, output=9)
-MODEL_NAME = 'ETS2_RAI-0.001-Googlenet_Inception_v3_Sentdex-100-epochs.model'
-model.load(MODEL_NAME)
 
-print('We have loaded a previous model!!!!')
+MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
 
 def RAI():
-        SpeedThread = threading.Thread(target=SpeedDetect, args=(), daemon=True)
-        SpeedThread.start()
+    input_tensor = Input(shape=(WIDTH,HEIGHT,3))
+    model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None) #input_shape=(WIDTH,HEIGHT,3),
+    model.compile('Adagrad', 'categorical_crossentropy')
 
-        paused = False
-        mode_choice = 0
+    model = load_model(MODEL_NAME)
+    """
+    SpeedThread = threading.Thread(target=SpeedDetect, args=(), daemon=True)
+    SpeedThread.start()
+    """
+    paused = False
+    mode_choice = 0
+    last_choice = mode_choice
+    """
+    screen = grab_screen((1280,65,1024,768))
+    screen = cv2.resize(screen, (WIDTH,HEIGHT))
+    screen = screen.reshape(WIDTH,HEIGHT,3)
+    
+    screen1 = grab_screen((1280,65,1024,768))
+    screen1 = cv2.resize(screen1, (WIDTH,HEIGHT))
+    screen1 = screen1.reshape(WIDTH,HEIGHT,3)
 
-        screen = grab_screen((1280,65,1024,768))
+    screen2 = grab_screen((1280,65,1024,768))
+    screen2 = cv2.resize(screen2, (WIDTH,HEIGHT))
+    screen2 = screen2.reshape(WIDTH,HEIGHT,3)
 
-        stuck_time = 0
+    screen3 = grab_screen((1280,65,1024,768))
+    screen3 = cv2.resize(screen3, (WIDTH,HEIGHT))
+    screen3 = screen3.reshape(WIDTH,HEIGHT,3)
+
+    state = np.array([screen,screen1,screen2,screen3]).reshape(4,WIDTH,HEIGHT,3)
+    """
+    stuck_time = 0
+    
+    last_time = time.time()
+    """
+    for i in list(range(5))[::-1]:
+        print(i+1)
+        time.sleep(1)
+    """
+    while(True):
         
-        last_time = time.time()
+        if not paused:
+            last_time = time.time()
 
-        for i in list(range(10))[::-1]:
-            print(i+1)
-            time.sleep(1)
-        
-        while(True):
-            
-            if not paused:
-                last_time = time.time()
-                
-                screen = grab_screen((1280,65,1024,768))
+            """
+            Speed = ReadSpeed()
+            print("Speed: ",Speed)
+            """
+            """
+            state[3] = state[2]
+            state[2] = state[1]
+            state[1] = state[0]
+            screen = grab_screen((1280,65,1024,768))
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))
+            screen = screen.reshape(WIDTH,HEIGHT,3)
+            state[0] = screen
+            """
+            screen = grab_screen((1280,65,1024,768))
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))
+            screen = screen.reshape(1,WIDTH,HEIGHT,3)
 
-                Speed = ReadSpeed()
-                print("Speed: ",Speed)
+            prediction = model.predict(screen)
+            #prediction = prediction[0][0:9] + prediction[1][0:9] + prediction[2][0:9] + prediction[3][0:9]
+            #                                           [w, s, a, d, wa, wd, sa, sd, nk]
+            prediction = np.array(prediction) * np.array([1, 1, 1, 1, 1, 1, 1, 1, 0.001])           
+            mode_choice = np.argmax(prediction)
 
-                screen = cv2.resize(screen, (WIDTH,HEIGHT))
-                
-                prediction = model.predict([screen.reshape(WIDTH,HEIGHT,3)])[0]
-                #prediction = np.array(prediction) * np.array([4.5, 0.1, 0.1, 0.1,  1.8,   1.8, 0.5, 0.5, 0.2])
-
-
-                mode_choice = np.argmax(prediction)
-
-                if mode_choice == 0:
-                    straight()
-                    choice_picked = 'straight'
-                    
-                elif mode_choice == 1:
-                    reverse()
-                    choice_picked = 'reverse'
-                    
-                elif mode_choice == 2:
-                    left()
-                    choice_picked = 'left'
-                elif mode_choice == 3:
-                    right()
-                    choice_picked = 'right'
-                elif mode_choice == 4:
-                    forward_left()
-                    choice_picked = 'forward+left'
-                elif mode_choice == 5:
-                    forward_right()
-                    choice_picked = 'forward+right'
-                elif mode_choice == 6:
-                    reverse_left()
-                    choice_picked = 'reverse+left'
-                elif mode_choice == 7:
-                    reverse_right()
-                    choice_picked = 'reverse+right'
-                elif mode_choice == 8:
+  
+            if mode_choice == 0:
+                if last_choice != 0 or 4 or 5:
                     no_keys()
-                    choice_picked = 'nokeys'
-
-                print('loop took {} seconds. Choice: {}'.format( round(time.time()-last_time, 3) ,choice_picked))
+                straight()
+                choice_picked = 'straight'
                 
-                if Speed<= 10:
-                    stuck_time += time.time()-last_time
-                    if stuck_time >= 30:
-                        stuck_time = -15
-                        Restore()
-                else:
-                    stuck_time = 0
-
+            elif mode_choice == 1:
+                if last_choice != 1 or 6 or 7:
+                    no_keys()
+                reverse()
+                choice_picked = 'reverse'
                 
+            elif mode_choice == 2:
+                left()
+                choice_picked = 'left'
 
-            global pausekey
-            if pausekey:
-                if paused:
-                    paused = False
-                    print("Resuming")
-                    time.sleep(1)
-                else:
-                    paused = True
-                    ReleaseKey(LeftKey)
-                    ReleaseKey(ForwardKey)
-                    ReleaseKey(RightKey)
-                    ReleaseKey(ReverseKey)
-                    time.sleep(1)
-                    print("Paused")
-                pausekey = False       
+            elif mode_choice == 3:
+                right()
+                choice_picked = 'right'
+
+            elif mode_choice == 4:
+                if last_choice != 0 or 4 or 5:
+                    no_keys()
+                forward_left()
+                choice_picked = 'forward+left'
+
+            elif mode_choice == 5:
+                if last_choice != 0 or 4 or 5:
+                    no_keys()
+                forward_right()
+                choice_picked = 'forward+right'
+
+            elif mode_choice == 6:
+                if last_choice != 1 or 6 or 7:
+                    no_keys()
+                reverse_left()
+                choice_picked = 'reverse+left'
+
+            elif mode_choice == 7:
+                if last_choice != 1 or 6 or 7:
+                    no_keys()
+                reverse_right()
+                choice_picked = 'reverse+right'
+
+            elif mode_choice == 8:
+                no_keys()
+                choice_picked = 'nokeys'
+            else:
+                choice_picked = "Invalid"
+                print(mode_choice)
+
+            last_choice = mode_choice
+
+            print('loop took {} seconds. Choice: {}'.format( round(time.time()-last_time, 3) ,choice_picked))
+            """
+            if Speed<= 10:
+                stuck_time += time.time()-last_time
+                if stuck_time >= 30:
+                    stuck_time = -15
+                    Restore()
+            else:
+                stuck_time = 0
+            """
+            
+
+        global pausekey
+        if pausekey:
+            if paused:
+                paused = False
+                print("Resuming")
+                time.sleep(1)
+            else:
+                paused = True
+                ReleaseKey(LeftKey)
+                ReleaseKey(ForwardKey)
+                ReleaseKey(RightKey)
+                ReleaseKey(ReverseKey)
+                time.sleep(1)
+                print("Paused")
+            pausekey = False       
 
 if __name__=="__main__":
+    #with tf.device('/cpu:0'):
     RAI()

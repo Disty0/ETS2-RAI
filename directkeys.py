@@ -10,6 +10,7 @@ F7 = "f7"
 ENTER = "enter"
 ONE = "1"
 SPACE = "space"
+SIX = "6"
 
 def PressKey(key):
     pyautogui.keyDown(key)
