@@ -121,7 +121,11 @@ def RAI():
         mode_choice = 0
         last_choice = mode_choice
 
+<<<<<<< HEAD
         screen = grab_screen((1280,52,1024,768))
+=======
+        screen = grab_screen((1280,65,1024,768))
+>>>>>>> 9088b72ee79044e8d09725a5c5eb95fe7b3e9066
         screen = cv2.resize(screen, (WIDTH,HEIGHT))
         screen = screen.reshape(WIDTH,HEIGHT,3)
 
