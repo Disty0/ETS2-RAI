@@ -8,19 +8,19 @@ import pandas as pd
 from collections import deque
 from random import shuffle
 import pickle
-
+"""
 import tensorflow as tf
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0],True)
-
-#os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+"""
+os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 from keras import Input
 from keras.applications.inception_v3 import InceptionV3
 #from keras.callbacks import TensorBoard
 from keras.models import load_model
 
-BATCH = 16
+BATCH = 6
 
 balanced_train_path = 'balanced_train_data/'
 
@@ -82,9 +82,9 @@ for e in range(EPOCHS):
             
             X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,12) 
             Y = np.array([i[1] for i in train_data])
+           
+            del train_data            
 
-            del train_data
-            
             print("============================")
             print("Epochs: {} - Steps: {}".format(e, count))
             model.fit(X, Y, batch_size=BATCH ,epochs=1, validation_split=0.02) #, callbacks=[tensorboard])
