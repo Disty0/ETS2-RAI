@@ -1,7 +1,12 @@
 #Modified code of Sentex Pygta5 3. test_model.py
+"""
 import tensorflow as tf
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0],True)
+"""
+
+import os
+os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 import numpy as np
 from grabscreen import grab_screen
@@ -58,16 +63,14 @@ t_time = 0.25
 MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
 
 def RAI():
-<<<<<<< HEAD
-    input_tensor = Input(shape=(4,WIDTH,HEIGHT,3))
+    input_tensor = Input(shape=(WIDTH,HEIGHT,12))
     model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None)
-=======
-    input_tensor = Input(shape=(WIDTH,HEIGHT,3))
-    model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None) #input_shape=(WIDTH,HEIGHT,3),
->>>>>>> 9088b72ee79044e8d09725a5c5eb95fe7b3e9066
     model.compile('Adagrad', 'categorical_crossentropy')
 
-    model = load_model(MODEL_NAME)
+    try:
+        model = load_model(MODEL_NAME)
+    except:
+        print('Failed to load model!')
     """
     SpeedThread = threading.Thread(target=SpeedDetect, args=(), daemon=True)
     SpeedThread.start()
@@ -75,35 +78,17 @@ def RAI():
     paused = False
     mode_choice = 0
     last_choice = mode_choice
-<<<<<<< HEAD
     
     screen = grab_screen((1280,52,1024,768))
     screen = cv2.resize(screen, (WIDTH,HEIGHT))
     screen = screen.reshape(WIDTH,HEIGHT,3)
 
-    state = np.array([screen,screen,screen,screen]).reshape(4,WIDTH,HEIGHT,3)
+    statehistory0 = screen
+    statehistory1 = screen
+    statehistory2 = screen
+
+    state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(4,WIDTH,HEIGHT,3)
     
-=======
-    """
-    screen = grab_screen((1280,65,1024,768))
-    screen = cv2.resize(screen, (WIDTH,HEIGHT))
-    screen = screen.reshape(WIDTH,HEIGHT,3)
-    
-    screen1 = grab_screen((1280,65,1024,768))
-    screen1 = cv2.resize(screen1, (WIDTH,HEIGHT))
-    screen1 = screen1.reshape(WIDTH,HEIGHT,3)
-
-    screen2 = grab_screen((1280,65,1024,768))
-    screen2 = cv2.resize(screen2, (WIDTH,HEIGHT))
-    screen2 = screen2.reshape(WIDTH,HEIGHT,3)
-
-    screen3 = grab_screen((1280,65,1024,768))
-    screen3 = cv2.resize(screen3, (WIDTH,HEIGHT))
-    screen3 = screen3.reshape(WIDTH,HEIGHT,3)
-
-    state = np.array([screen,screen1,screen2,screen3]).reshape(4,WIDTH,HEIGHT,3)
-    """
->>>>>>> 9088b72ee79044e8d09725a5c5eb95fe7b3e9066
     stuck_time = 0
     
     last_time = time.time()
@@ -121,39 +106,21 @@ def RAI():
             Speed = ReadSpeed()
             print("Speed: ",Speed)
             """
-<<<<<<< HEAD
             
-            state[3] = state[2]
-            state[2] = state[1]
-            state[1] = state[0]
             screen = grab_screen((1280,52,1024,768))
-            screen = cv2.resize(screen, (WIDTH,HEIGHT))
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))            
             screen = screen.reshape(WIDTH,HEIGHT,3)
-            state[0] = screen
+
+            state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(1,WIDTH,HEIGHT,12)
+
+            statehistory2 = statehistory1
+            statehistory1 = statehistory0
+            statehistory0 = screen
 
             prediction = model.predict(state)
             #prediction = prediction[0][0:9] + prediction[1][0:9] + prediction[2][0:9] + prediction[3][0:9]
             #                                           [w, s, a, d, wa, wd, sa, sd, nk]
             #prediction = np.array(prediction) * np.array([1, 1, 1, 1, 1, 1, 1, 1, 0.001])           
-=======
-            """
-            state[3] = state[2]
-            state[2] = state[1]
-            state[1] = state[0]
-            screen = grab_screen((1280,65,1024,768))
-            screen = cv2.resize(screen, (WIDTH,HEIGHT))
-            screen = screen.reshape(WIDTH,HEIGHT,3)
-            state[0] = screen
-            """
-            screen = grab_screen((1280,65,1024,768))
-            screen = cv2.resize(screen, (WIDTH,HEIGHT))
-            screen = screen.reshape(1,WIDTH,HEIGHT,3)
-
-            prediction = model.predict(screen)
-            #prediction = prediction[0][0:9] + prediction[1][0:9] + prediction[2][0:9] + prediction[3][0:9]
-            #                                           [w, s, a, d, wa, wd, sa, sd, nk]
-            prediction = np.array(prediction) * np.array([1, 1, 1, 1, 1, 1, 1, 1, 0.001])           
->>>>>>> 9088b72ee79044e8d09725a5c5eb95fe7b3e9066
             mode_choice = np.argmax(prediction)
 
   
