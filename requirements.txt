@@ -1,6 +1,5 @@
-tf-models-official
 keras
-openvb-python
+opencv-python
 tensorflow
 numpy
 pynput

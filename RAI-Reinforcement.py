@@ -44,12 +44,8 @@ BATCH_SIZE = 1
 ExpReplay_CAPACITY = 10240
 GAMMA = 0.975
 
-GAME_WIDTH = 1920
-GAME_HEIGHT = 1080
-
 WIDTH = 480
 HEIGHT = 270
-LR = 1e-3
 
 choices = 9
 
@@ -107,215 +103,226 @@ def SaveData(steps,ExpReplay):
 
 def RAI():
         
-        with tf.device('/cpu:0'):
+        #with tf.device('/cpu:0'):
 
-            input_tensor = Input(shape=(WIDTH,HEIGHT,3))
-            model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None) #input_shape=(WIDTH,HEIGHT,3),
-            model.compile('Adagrad', 'categorical_crossentropy')
+        input_tensor = Input(shape=(WIDTH,HEIGHT,3))
+        model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None) #input_shape=(WIDTH,HEIGHT,3),
+        model.compile('Adagrad', 'categorical_crossentropy')
 
-            model = load_model(MODEL_NAME)
+        model = load_model(MODEL_NAME)
 
-            print('We have loaded a previous model!')
+        print('We have loaded a previous model!')
+        
+
+        SpeedThread = threading.Thread(target=SpeedDetect, args=(), daemon=True)
+        SpeedThread.start()
+
+        paused = False
+        mode_choice = 0
+        last_choice = mode_choice
+
+        screen = grab_screen((1280,52,1024,768))
+        screen = cv2.resize(screen, (WIDTH,HEIGHT))
+        screen = screen.reshape(WIDTH,HEIGHT,3)
+
+        stuck_time = 0
+
+        reward = 0
+        rewardcheck = 0
+
+        epsilon = 0.75
+
+        (steps , ExpReplay) = LoadData(screen,mode_choice,reward,screen)
+        
+        last_time = time.time()
+
+        for i in list(range(5))[::-1]:
+            print(i+1)
+            time.sleep(1)
+
+
+        while(True):
             
-
-            SpeedThread = threading.Thread(target=SpeedDetect, args=(), daemon=True)
-            SpeedThread.start()
-
-            paused = False
-            mode_choice = 0
-
-            screen = grab_screen((1280,65,1024,768))
-            screen = cv2.resize(screen, (WIDTH,HEIGHT))
-            screen = screen.reshape(WIDTH,HEIGHT,3)
-
-            stuck_time = 0
-
-            reward = 0
-            rewardcheck = 0
-
-            epsilon = 0.75
-
-            (steps , ExpReplay) = LoadData(screen,mode_choice,reward,screen)
-            
-            last_time = time.time()
-
-            for i in list(range(5))[::-1]:
-                print(i+1)
-                time.sleep(1)
-
-
-            while(True):
+            if not paused:
+                last_time = time.time()
                 
-                if not paused:
-                    last_time = time.time()
+                screen = grab_screen((1280,65,1024,768))
+                screen = cv2.resize(screen, (WIDTH,HEIGHT))
+                screen = screen.reshape(WIDTH,HEIGHT,3)
+                Speed = ReadSpeed()
+
+                if rewardcheck >= 10:
+                    if Speed <= 10:
+                        reward -= 10
                     
-                    screen = grab_screen((1280,65,1024,768))
-                    screen = cv2.resize(screen, (WIDTH,HEIGHT))
-                    screen = screen.reshape(WIDTH,HEIGHT,3)
-                    Speed = ReadSpeed()
+                    elif Speed <= 20:
+                        pass
 
-                    if rewardcheck >= 10:
-                        if Speed <= 10:
-                            reward -= 10
-                        
-                        elif Speed <= 20:
-                            pass
+                    elif Speed <= 30:
+                        reward += 10
 
-                        elif Speed <= 30:
-                            reward += 10
+                    elif Speed <= 60:
+                        reward += 20
 
-                        elif Speed <= 60:
-                            reward += 20
+                    elif  Speed <= 100:
+                        reward += 40
 
-                        elif  Speed <= 100:
-                            reward += 40
-
-                        elif Speed <= 140:
-                            reward += 80
-                        
-                        else:
-                            reward += 100
-                        rewardcheck = 0
-
-                    if steps > ExpReplay_CAPACITY:
-                        epsilon = 0.5
-                    if steps > 48000:
-                        epsilon = 0.25
-                    if steps > 64000:
-                        epsilon = 0.15
-                    if steps > 80000:
-                        epsilon = 0.1
-                    if steps > 96000:
-                        epsilon = 0.05
-                    if steps > 112000:
-                        epsilon = 0.01
-
+                    elif Speed <= 140:
+                        reward += 80
                     
-                    if random.random() < epsilon:
-                        mode_choice = random.randint(0,8)
                     else:
-                        prediction = model.predict(screen.reshape(-1,WIDTH,HEIGHT,3))
-                        mode_choice = np.argmax(prediction)
+                        reward += 100
+                    rewardcheck = 0
 
-                    if mode_choice == 0:
-                        straight()
-                        choice_picked = 'straight'
-                        action = w
-                        
-                    elif mode_choice == 1:
-                        reverse()
-                        choice_picked = 'reverse'
-                        action = s
-                        
-                    elif mode_choice == 2:
-                        left()
-                        choice_picked = 'left'
-                        action = a
+                if steps > ExpReplay_CAPACITY:
+                    epsilon = 0.5
+                if steps > 48000:
+                    epsilon = 0.25
+                if steps > 64000:
+                    epsilon = 0.15
+                if steps > 80000:
+                    epsilon = 0.1
+                if steps > 96000:
+                    epsilon = 0.05
+                if steps > 112000:
+                    epsilon = 0.01
 
-                    elif mode_choice == 3:
-                        right()
-                        choice_picked = 'right'
-                        action = d
+                
+                if random.random() < epsilon:
+                    mode_choice = random.randint(0,8)
+                else:
+                    prediction = model.predict(screen.reshape(-1,WIDTH,HEIGHT,3))
+                    mode_choice = np.argmax(prediction)
 
-                    elif mode_choice == 4:
-                        forward_left()
-                        choice_picked = 'forward+left'
-                        action = wa
-
-                    elif mode_choice == 5:
-                        forward_right()
-                        choice_picked = 'forward+right'
-                        action = wa
-
-                    elif mode_choice == 6:
-                        reverse_left()
-                        choice_picked = 'reverse+left'
-                        action = sa
-                    elif mode_choice == 7:
-                        reverse_right()
-                        choice_picked = 'reverse+right'
-                        action = sd
-
-                    elif mode_choice == 8:
+                if mode_choice == 0:
+                    if last_choice != 0 or 4 or 5:
                         no_keys()
-                        choice_picked = 'nokeys'
-                        action = nk
+                    straight()
+                    choice_picked = 'straight'
+                    
+                elif mode_choice == 1:
+                    if last_choice != 1 or 6 or 7:
+                        no_keys()
+                    reverse()
+                    choice_picked = 'reverse'
+                    
+                elif mode_choice == 2:
+                    left()
+                    choice_picked = 'left'
 
-                    lenExpReplay = len(ExpReplay)
-                    if lenExpReplay < ExpReplay_CAPACITY:
-                        if lenExpReplay < BATCH_SIZE:
-                            SubBATCH_SIZE = lenExpReplay
-                        else:
-                            SubBATCH_SIZE = BATCH_SIZE
+                elif mode_choice == 3:
+                    right()
+                    choice_picked = 'right'
+
+                elif mode_choice == 4:
+                    if last_choice != 0 or 4 or 5:
+                        no_keys()
+                    forward_left()
+                    choice_picked = 'forward+left'
+
+                elif mode_choice == 5:
+                    if last_choice != 0 or 4 or 5:
+                        no_keys()
+                    forward_right()
+                    choice_picked = 'forward+right'
+
+                elif mode_choice == 6:
+                    if last_choice != 1 or 6 or 7:
+                        no_keys()
+                    reverse_left()
+                    choice_picked = 'reverse+left'
+
+                elif mode_choice == 7:
+                    if last_choice != 1 or 6 or 7:
+                        no_keys()
+                    reverse_right()
+                    choice_picked = 'reverse+right'
+
+                elif mode_choice == 8:
+                    no_keys()
+                    choice_picked = 'nokeys'
+                else:
+                    choice_picked = "Invalid"
+                    print(mode_choice)
+
+                last_choice = mode_choice
+
+
+                lenExpReplay = len(ExpReplay)
+                if lenExpReplay < ExpReplay_CAPACITY:
+                    if lenExpReplay < BATCH_SIZE:
+                        SubBATCH_SIZE = lenExpReplay
                     else:
                         SubBATCH_SIZE = BATCH_SIZE
+                else:
+                    SubBATCH_SIZE = BATCH_SIZE
 
-                    minibatch = random.sample(ExpReplay, SubBATCH_SIZE)
+                minibatch = random.sample(ExpReplay, SubBATCH_SIZE)
 
-                    inputs = np.zeros((SubBATCH_SIZE, WIDTH, HEIGHT, 3))
-                    targets = np.zeros((inputs.shape[0], choices)) 
-                    Q_sa = 0
+                inputs = np.zeros((SubBATCH_SIZE, WIDTH, HEIGHT, 3))
+                targets = np.zeros((inputs.shape[0], choices)) 
+                Q_sa = 0
 
 
-                    for i in range(len(minibatch)):
-                        state_t = minibatch[i][0]
-                        action_t = minibatch[i][1]
-                        reward_t = minibatch[i][2]
-                        state_t1 = minibatch[i][3]
+                for i in range(len(minibatch)):
+                    state_t = minibatch[i][0]
+                    action_t = minibatch[i][1]
+                    reward_t = minibatch[i][2]
+                    state_t1 = minibatch[i][3]
 
-                        inputs[i] = state_t
-                        targets[i] = model.predict(state_t.reshape(1,WIDTH,HEIGHT,3), batch_size=1)
-                        Q_sa = model.predict(state_t1.reshape(1,WIDTH,HEIGHT,3), batch_size=1)
+                    inputs[i] = state_t
+                    targets[i] = model.predict(state_t.reshape(1,WIDTH,HEIGHT,3), batch_size=1)
+                    Q_sa = model.predict(state_t1.reshape(1,WIDTH,HEIGHT,3), batch_size=1)
 
-                        if state_t1 is None:
-                            targets[i,action_t] = reward_t
-                        else:
-                            targets[i,action_t] = reward_t + GAMMA * np.max(Q_sa)
-
-                    model.fit(inputs, targets, batch_size = SubBATCH_SIZE, epochs = 1, verbose = 1)
-
-                    screen2 = grab_screen((1280,65,1024,768))
-                    screen2 = cv2.resize(screen2, (WIDTH,HEIGHT))
-                    screen2 = screen2.reshape(WIDTH,HEIGHT,3)
-
-                    ExpReplay.append((screen, mode_choice, reward, screen2))
-                    
-                    if lenExpReplay > ExpReplay_CAPACITY:
-                        ExpReplay.popleft()
-
-                    if Speed<= 10:
-                        stuck_time += time.time()-last_time
-                        if stuck_time >= 30:
-                            stuck_time = -15
-                            reward -= 1000
-                            Restore()
+                    if state_t1 is None:
+                        targets[i,action_t] = reward_t
                     else:
-                        stuck_time = 0
+                        targets[i,action_t] = reward_t + GAMMA * np.max(Q_sa)
 
-                    rewardcheck += time.time()-last_time
+                model.fit(inputs, targets, batch_size = SubBATCH_SIZE, epochs = 1, verbose = 0)
 
-                    steps += 1
-                    print('loop took {} seconds. Choice: {}. Steps: {}. Reward: {} Speed: {}'.format( round(time.time()-last_time, 3) ,choice_picked, steps, reward, Speed))
-                    
-                    if steps%128 == 0:
-                        SaveData(steps,ExpReplay)
-                        model.save(MODEL_NAME)
+                screen2 = grab_screen((1280,65,1024,768))
+                screen2 = cv2.resize(screen2, (WIDTH,HEIGHT))
+                screen2 = screen2.reshape(WIDTH,HEIGHT,3)
 
-                global pausekey
-                if pausekey:
-                    if paused:
-                        paused = False
-                        print("Resuming")
-                        time.sleep(1)
-                    else:
-                        paused = True
-                        ReleaseKey(LeftKey)
-                        ReleaseKey(ForwardKey)
-                        ReleaseKey(RightKey)
-                        ReleaseKey(ReverseKey)
-                        time.sleep(1)
-                        print("Paused")
-                    pausekey = False       
+                ExpReplay.append((screen, mode_choice, reward, screen2))
+                
+                if lenExpReplay > ExpReplay_CAPACITY:
+                    ExpReplay.popleft()
+
+                if Speed<= 10:
+                    stuck_time += time.time()-last_time
+                    if stuck_time >= 30:
+                        stuck_time = -15
+                        reward -= 1000
+                        Restore()
+                else:
+                    stuck_time = 0
+
+                rewardcheck += time.time()-last_time
+
+                steps += 1
+                print('loop took {} seconds. Choice: {}. Steps: {}. Reward: {} Speed: {}'.format( round(time.time()-last_time, 3) ,choice_picked, steps, reward, Speed))
+                
+                if steps%128 == 0:
+                    SaveData(steps,ExpReplay)
+                    model.save(MODEL_NAME)
+
+            global pausekey
+            if pausekey:
+                if paused:
+                    paused = False
+                    print("Resuming")
+                    time.sleep(1)
+                else:
+                    paused = True
+                    ReleaseKey(LeftKey)
+                    ReleaseKey(ForwardKey)
+                    ReleaseKey(RightKey)
+                    ReleaseKey(ReverseKey)
+                    time.sleep(1)
+                    print("Paused")
+                pausekey = False       
 
 if __name__=="__main__":
     RAI()

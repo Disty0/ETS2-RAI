@@ -1,6 +1,12 @@
 import time
-from directkeys import PressKey, ReleaseKey, ForwardKey, LeftKey, RightKey, ReverseKey, F5, F7, ENTER, ONE, SPACE
+from directkeys import PressKey, ReleaseKey, ForwardKey, LeftKey, RightKey, ReverseKey, F5, F7, ENTER, ONE, SPACE, SIX
 import random
+
+def no_keys():
+    ReleaseKey(ForwardKey)
+    ReleaseKey(LeftKey)
+    ReleaseKey(RightKey)
+    ReleaseKey(ReverseKey)
 
 def straight():
     PressKey(ForwardKey)
@@ -9,19 +15,13 @@ def straight():
     ReleaseKey(ReverseKey)
 
 def left():
-    if random.randrange(0,3) == 1:
-        PressKey(ForwardKey)
-    else:
-        ReleaseKey(ForwardKey)
+    ReleaseKey(ForwardKey)
     PressKey(LeftKey)
     ReleaseKey(RightKey)
     ReleaseKey(ReverseKey)
 
 def right():
-    if random.randrange(0,3) == 1:
-        PressKey(ForwardKey)
-    else:
-        ReleaseKey(ForwardKey)
+    ReleaseKey(ForwardKey)
     ReleaseKey(LeftKey)
     PressKey(RightKey)
     ReleaseKey(ReverseKey)
@@ -61,20 +61,10 @@ def reverse_right():
     PressKey(ReverseKey)
 
 
-
-def no_keys():
-    """if random.randrange(0,4) == 1:
-        PressKey(ForwardKey)
-    else:
-        ReleaseKey(ForwardKey)"""
-    ReleaseKey(ForwardKey)
-    ReleaseKey(LeftKey)
-    ReleaseKey(RightKey)
-    ReleaseKey(ReverseKey)
-
-
 def Restore():
     print("Restoring")
+    no_keys()
+
     PressKey(F7)
     time.sleep(0.5)
     ReleaseKey(F7)
@@ -103,5 +93,9 @@ def Restore():
     PressKey(SPACE)
     time.sleep(0.5)
     ReleaseKey(SPACE)
+
+    PressKey(SIX)
+    time.sleep(0.5)
+    ReleaseKey(SIX)
 
     print("Restored")

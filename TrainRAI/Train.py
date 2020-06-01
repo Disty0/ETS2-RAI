@@ -17,7 +17,7 @@ tf.config.experimental.set_memory_growth(physical_devices[0],True)
 
 from keras import Input
 from keras.applications.inception_v3 import InceptionV3
-from keras.callbacks import TensorBoard
+#from keras.callbacks import TensorBoard
 from keras.models import load_model
 
 BATCH = 16
@@ -47,7 +47,7 @@ if FILE_I_END == -1:
             print('Final File: ',FILE_I_END) 
             break
 
-input_tensor = Input(shape=(WIDTH,HEIGHT,3))
+input_tensor = Input(shape=(WIDTH,HEIGHT,12))
 model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None)
 model.compile('Adagrad', 'categorical_crossentropy')
 
@@ -60,9 +60,12 @@ tensorboard = TensorBoard(
 """
 
 if LOAD_MODEL:
-    model = load_model(MODEL_NAME)
-    print('We have loaded a previous model!')
-    
+    try:
+        model = load_model(MODEL_NAME)
+        print('We have loaded a previous model!')
+    except:
+        print('Failed to load model!')
+
 # iterates through the training files
 for e in range(EPOCHS):
     data_order = [i for i in range(0,FILE_I_END+1)]
@@ -77,15 +80,20 @@ for e in range(EPOCHS):
             SAMPLE = len(train_data)
             print('training_data-{}.npy - Sample Size: {} - Batch Size: {}'.format(i,SAMPLE,BATCH))
             
-            X = np.array([i[0] for i in train_data])#.reshape(-1,WIDTH,HEIGHT,3) #Pre reshaped at recording
+            X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,12) 
             Y = np.array([i[1] for i in train_data])
+
+            del train_data
             
             print("============================")
             print("Epochs: {} - Steps: {}".format(e, count))
             model.fit(X, Y, batch_size=BATCH ,epochs=1, validation_split=0.02) #, callbacks=[tensorboard])
             print("============================")
 
-            if count%5 == 0 and count != 0:
+            del X
+            del Y
+
+            if count%1 == 0 and count != 0:
                 print('SAVING MODEL!')
                 model.save(MODEL_NAME)
                     

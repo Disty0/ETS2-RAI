@@ -76,7 +76,7 @@ for count,i in enumerate(data_order):
 
         for data in train_data:
             img = data[0]
-            img = img.reshape(480,270,3)
+            img = img.reshape(4,480,270,3)
             choice = data[1]
 
             if choice == w:

@@ -10,6 +10,11 @@ import keyboard
 
 unbalanced_path = 'unbalanced_train_data/'
 
+WIDTH = 480
+HEIGHT = 270
+
+starting_value = 0
+
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
 a = [0,0,1,0,0,0,0,0,0]
@@ -19,8 +24,6 @@ wd = [0,0,0,0,0,1,0,0,0]
 sa = [0,0,0,0,0,0,1,0,0]
 sd = [0,0,0,0,0,0,0,1,0]
 nk = [0,0,0,0,0,0,0,0,1]
-
-starting_value = 0
 
 output = nk
 def outputkey(key):
@@ -57,12 +60,22 @@ while True:
 
 
 def main(file_name, starting_value):
-    file_name = file_name
-    starting_value = starting_value
     training_data = []
     for i in list(range(4))[::-1]:
         print(i+1)
         time.sleep(1)
+
+    screen = grab_screen((1280,52,1024,768))
+    screen = cv2.resize(screen, (WIDTH,HEIGHT))
+    screen = screen.reshape(WIDTH,HEIGHT,3)
+
+    statehistory0 = screen
+    statehistory1 = screen
+    statehistory2 = screen
+
+    state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(4,WIDTH,HEIGHT,3)
+
+    cv2.startWindowThread()
 
     paused = False
     print('STARTING!!!')
@@ -70,17 +83,36 @@ def main(file_name, starting_value):
         
         if not paused:
             global output
-            screen = grab_screen((1280,65,1024,768))
-            
-            # resize to something a bit more acceptable for a CNN
-            screen = cv2.resize(screen, (480,270))
-            # run a color convert:
-            screen = screen.reshape(480,270,3)
+
+            screen = grab_screen((1280,52,1024,768))
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))            
+            screen = screen.reshape(WIDTH,HEIGHT,3)
+
+            state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(4,WIDTH,HEIGHT,3)
+
+            cv2.namedWindow("preview")
+            cv2.imshow('preview', state[0].reshape(HEIGHT,WIDTH,3))
+
+            cv2.namedWindow("preview1")
+            cv2.imshow('preview1', state[1].reshape(HEIGHT,WIDTH,3))
+
+            cv2.namedWindow("preview2")
+            cv2.imshow('preview2', state[2].reshape(HEIGHT,WIDTH,3))
+
+            cv2.namedWindow("preview3")
+            cv2.imshow('preview3', state[3].reshape(HEIGHT,WIDTH,3))
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                cv2.destroyAllWindows()
 
             print(output)
 
-            training_data.append([screen,output])
+            training_data.append([state,output])
             output = nk
+
+            statehistory2 = statehistory1
+            statehistory1 = statehistory0
+            statehistory0 = screen
 
             if len(training_data) % 128 == 0:
                 print("Current Data Size: ",len(training_data))
