@@ -41,7 +41,7 @@ listener.start()  # start to listen on a separate thread
 #listener.join()  # remove if main thread is polling self.keys
 
 
-MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
+MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionResNetV2')
 
 WIDTH = 480
 HEIGHT = 270
@@ -60,12 +60,9 @@ nk = [0,0,0,0,0,0,0,0,1]
 
 t_time = 0.25
 
-MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
+MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionResNetV2')
 
 def RAI():
-    input_tensor = Input(shape=(WIDTH,HEIGHT,12))
-    model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None)
-    model.compile('Adagrad', 'categorical_crossentropy')
 
     try:
         model = load_model(MODEL_NAME)
@@ -78,16 +75,6 @@ def RAI():
     paused = False
     mode_choice = 0
     last_choice = mode_choice
-    
-    screen = grab_screen((1280,52,1024,768))
-    screen = cv2.resize(screen, (WIDTH,HEIGHT))
-    screen = screen.reshape(WIDTH,HEIGHT,3)
-
-    statehistory0 = screen
-    statehistory1 = screen
-    statehistory2 = screen
-
-    state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(4,WIDTH,HEIGHT,3)
     
     stuck_time = 0
     
@@ -109,13 +96,7 @@ def RAI():
             
             screen = grab_screen((1280,52,1024,768))
             screen = cv2.resize(screen, (WIDTH,HEIGHT))            
-            screen = screen.reshape(WIDTH,HEIGHT,3)
-
-            state = np.array([screen,statehistory0,statehistory1,statehistory2]).reshape(1,WIDTH,HEIGHT,12)
-
-            statehistory2 = statehistory1
-            statehistory1 = statehistory0
-            statehistory0 = screen
+            screen = screen.reshape(1,WIDTH,HEIGHT,3)
 
             prediction = model.predict(state)
             #prediction = prediction[0][0:9] + prediction[1][0:9] + prediction[2][0:9] + prediction[3][0:9]

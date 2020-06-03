@@ -1,5 +1,3 @@
-#Modified code of Sentex Pygta5 2. train_model.py
-
 import numpy as np
 import cv2
 import time
@@ -16,28 +14,28 @@ tf.config.experimental.set_memory_growth(physical_devices[0],True)
 os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 from keras import Input
-from keras.applications.inception_v3 import InceptionV3
-#from keras.callbacks import TensorBoard
+from keras.applications.inception_v3 import InceptionV3 as network
+from keras.optimizers import SGD
 from keras.models import load_model
+#from keras.callbacks import TensorBoard
 
-BATCH = 6
+BATCH = 20
 
-balanced_train_path = 'balanced_train_data/'
+train_data_path = 'balanced_train_data/'
 
-FILE_I_END = -1 #-1 for auto detect #Note: starting file is training_data-0.npy not training_data-1.npy
+FILE_I_END = -1 #-1 for auto detect
 
 WIDTH = 480
 HEIGHT = 270
-EPOCHS = 1000000000 #i am too lazy to put it on while true
+EPOCHS = 1000000000000000000000000000000000000000000000000000000000000000000000000000 
 
-MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionV3')
-
+MODEL_NAME = 'ETS2RAI-{}'.format('InceptionV3')
 LOAD_MODEL = True
 
 if FILE_I_END == -1:
     FILE_I_END = 0
     while True:
-        file_name = balanced_train_path + 'training_data-{}.npy'.format(FILE_I_END)
+        file_name = train_data_path + 'training_data-{}.npy'.format(FILE_I_END)
 
         if os.path.isfile(file_name):
             print('File exists: ',FILE_I_END)
@@ -46,10 +44,6 @@ if FILE_I_END == -1:
             FILE_I_END -= 1
             print('Final File: ',FILE_I_END) 
             break
-
-input_tensor = Input(shape=(WIDTH,HEIGHT,12))
-model = InceptionV3(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None)
-model.compile('Adagrad', 'categorical_crossentropy')
 
 """
 tensorboard = TensorBoard(
@@ -65,6 +59,9 @@ if LOAD_MODEL:
         print('We have loaded a previous model!')
     except:
         print('Failed to load model!')
+        input_tensor = Input(shape=(WIDTH,HEIGHT,3))
+        model = network(include_top=True, input_tensor=input_tensor , pooling='max', classes=9, weights=None)
+        model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy')
 
 # iterates through the training files
 for e in range(EPOCHS):
@@ -73,21 +70,21 @@ for e in range(EPOCHS):
     for count,i in enumerate(data_order):
         
         try:
-            file_name = balanced_train_path + 'training_data-{}.npy'.format(i)
+            file_name = train_data_path + 'training_data-{}.npy'.format(i)
             # full file info
             train_data = np.load(file_name, allow_pickle=True)
 
             SAMPLE = len(train_data)
             print('training_data-{}.npy - Sample Size: {} - Batch Size: {}'.format(i,SAMPLE,BATCH))
             
-            X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,12) 
+            X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,3)
             Y = np.array([i[1] for i in train_data])
            
             del train_data            
 
             print("============================")
             print("Epochs: {} - Steps: {}".format(e, count))
-            model.fit(X, Y, batch_size=BATCH ,epochs=1, validation_split=0.02) #, callbacks=[tensorboard])
+            model.fit(X, Y, batch_size=BATCH ,epochs=1) #, callbacks=[tensorboard])
             print("============================")
 
             del X
