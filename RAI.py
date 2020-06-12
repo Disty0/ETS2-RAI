@@ -43,8 +43,8 @@ listener.start()  # start to listen on a separate thread
 
 MODEL_NAME = 'ETS2_RAI-{}'.format('InceptionResNetV2')
 
-WIDTH = 480
-HEIGHT = 270
+WIDTH = 288
+HEIGHT = 162
 
 choices = 9
 

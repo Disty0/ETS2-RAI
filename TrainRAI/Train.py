@@ -6,6 +6,7 @@ import pandas as pd
 from collections import deque
 from random import shuffle
 import pickle
+from random import randint
 """
 import tensorflow as tf
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -19,15 +20,18 @@ from keras.optimizers import SGD
 from keras.models import load_model
 #from keras.callbacks import TensorBoard
 
-BATCH = 20
+BATCH = 16
 
 train_data_path = 'balanced_train_data/'
 
 FILE_I_END = -1 #-1 for auto detect
 
-WIDTH = 480
-HEIGHT = 270
-EPOCHS = 1000000000000000000000000000000000000000000000000000000000000000000000000000 
+WIDTH = 288
+HEIGHT = 162
+EPOCHS = 10000000000000000
+
+TRAIN_WIDTH = 480
+TRAIN_HEIGHT = 270
 
 MODEL_NAME = 'ETS2RAI-{}'.format('InceptionV3')
 LOAD_MODEL = True
@@ -71,30 +75,26 @@ for e in range(EPOCHS):
         
         try:
             file_name = train_data_path + 'training_data-{}.npy'.format(i)
-            # full file info
             train_data = np.load(file_name, allow_pickle=True)
-
+            
             SAMPLE = len(train_data)
             print('training_data-{}.npy - Sample Size: {} - Batch Size: {}'.format(i,SAMPLE,BATCH))
             
-            X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,3)
+            X = np.array([cv2.resize(i[0].reshape(TRAIN_HEIGHT,TRAIN_WIDTH,3),(WIDTH,HEIGHT)) for i in train_data]).reshape(SAMPLE,WIDTH,HEIGHT,3)
             Y = np.array([i[1] for i in train_data])
-           
-            del train_data            
 
+            del train_data            
             print("============================")
             print("Epochs: {} - Steps: {}".format(e, count))
             model.fit(X, Y, batch_size=BATCH ,epochs=1) #, callbacks=[tensorboard])
             print("============================")
-
             del X
             del Y
 
             if count%1 == 0 and count != 0:
                 print('SAVING MODEL!')
                 model.save(MODEL_NAME)
-                    
+                  
         except Exception as e:
             print(str(e))
-
 print("FINISHED {} EPOCHS!".format(EPOCHS))
